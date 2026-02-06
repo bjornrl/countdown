@@ -1,56 +1,30 @@
 /**
  * TARGET DATE CALCULATION:
- * The countdown ends exactly 100 days after January 1st.
+ * The countdown ends on April 11 at 00:00:00 in the user's local timezone.
  * 
  * Calculation:
- * - Start: January 1 at 00:00:00 in user's local timezone
- * - Add: 100 days
- * - Result: April 11 at 00:00:00 in user's local timezone
+ * - Target: April 11 at 00:00:00 in user's local timezone
+ * - If April 11 of current year has passed, target next year's April 11
  * 
  * We use local time to ensure the countdown matches the user's timezone,
  * making it consistent regardless of where they are located.
  */
 function getTargetDate() {
   const now = new Date();
-  const jan1 = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0); // Jan 1 at 00:00:00 local time
-  const targetDate = new Date(jan1);
-  targetDate.setDate(jan1.getDate() + 100); // Add 100 days
-  return targetDate;
+  const currentYear = now.getFullYear();
+  
+  // Create April 11 of current year at 00:00:00 local time
+  const april11ThisYear = new Date(currentYear, 3, 11, 0, 0, 0, 0); // Month 3 = April (0-indexed)
+  
+  // If April 11 has already passed this year, target next year
+  if (now > april11ThisYear) {
+    return new Date(currentYear + 1, 3, 11, 0, 0, 0, 0);
+  }
+  
+  return april11ThisYear;
 }
 
-/**
- * FONT ROTATION LOGIC:
- * To ensure fonts never repeat consecutively, we maintain:
- * 1. A list of at least 12 fonts (Google Fonts + fallbacks)
- * 2. An index tracking the current font position
- * 3. Logic to advance to the next font whenever ANY digit changes
- * 
- * When a digit changes:
- * - We increment the font index
- * - If we reach the end, we wrap around (but skip the previous font)
- * - This guarantees no two consecutive updates use the same font
- */
-const fonts = [
-  'Roboto Mono',           // Google Font
-  'Space Mono',            // Google Font
-  'JetBrains Mono',        // Google Font
-  'Fira Code',             // Google Font
-  'Source Code Pro',       // Google Font
-  'IBM Plex Mono',         // Google Font
-  'PT Mono',               // Google Font
-  'Share Tech Mono',       // Google Font
-  'VT323',                 // Google Font
-  'Orbitron',              // Google Font
-  'Rajdhani',              // Google Font
-  'Quantico',              // Google Font
-  'Courier New',           // Fallback
-  'monospace'              // Final fallback
-];
-
 let targetDate;
-let currentFontIndex = 0;
-let previousFontIndex = -1; // Track previous to avoid immediate repeats
-let currentFont;
 
 // Countdown values
 let days = 0;
@@ -74,22 +48,6 @@ let animatingElements = {
 
 let lastUpdateTime = 0;
 const updateInterval = 250; // Update every 250ms for accuracy
-
-/**
- * Get the next font, ensuring it's different from the previous one
- */
-function getNextFont() {
-  // Advance to next font
-  currentFontIndex = (currentFontIndex + 1) % fonts.length;
-  
-  // If we wrapped around and would use the previous font, skip it
-  if (currentFontIndex === previousFontIndex && fonts.length > 1) {
-    currentFontIndex = (currentFontIndex + 1) % fonts.length;
-  }
-  
-  previousFontIndex = currentFontIndex;
-  return fonts[currentFontIndex];
-}
 
 /**
  * Format number with leading zeros
@@ -121,35 +79,22 @@ function updateCountdown() {
   minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
   seconds = Math.floor((difference % (1000 * 60)) / 1000);
   
-  // Check if any digit has changed
-  let hasChanged = false;
-  if (prevDays !== days || prevHours !== hours || 
-      prevMinutes !== minutes || prevSeconds !== seconds) {
-    hasChanged = true;
-    
-    // Trigger animations for changed elements
-    if (prevDays !== days) {
-      animatingElements.days = true;
-      setTimeout(() => { animatingElements.days = false; }, 200);
-    }
-    if (prevHours !== hours) {
-      animatingElements.hours = true;
-      setTimeout(() => { animatingElements.hours = false; }, 200);
-    }
-    if (prevMinutes !== minutes) {
-      animatingElements.minutes = true;
-      setTimeout(() => { animatingElements.minutes = false; }, 200);
-    }
-    if (prevSeconds !== seconds) {
-      animatingElements.seconds = true;
-      setTimeout(() => { animatingElements.seconds = false; }, 200);
-    }
+  // Check if any digit has changed and trigger animations
+  if (prevDays !== days) {
+    animatingElements.days = true;
+    setTimeout(() => { animatingElements.days = false; }, 200);
   }
-  
-  // If any digit changed, update font
-  if (hasChanged) {
-    const newFontName = getNextFont();
-    currentFont = newFontName;
+  if (prevHours !== hours) {
+    animatingElements.hours = true;
+    setTimeout(() => { animatingElements.hours = false; }, 200);
+  }
+  if (prevMinutes !== minutes) {
+    animatingElements.minutes = true;
+    setTimeout(() => { animatingElements.minutes = false; }, 200);
+  }
+  if (prevSeconds !== seconds) {
+    animatingElements.seconds = true;
+    setTimeout(() => { animatingElements.seconds = false; }, 200);
   }
   
   // Update previous values
@@ -167,9 +112,6 @@ function setup() {
   
   // Initialize target date
   targetDate = getTargetDate();
-  
-  // Initialize font
-  currentFont = fonts[0];
   
   // Set initial countdown values
   updateCountdown();
@@ -202,8 +144,10 @@ function draw() {
   fill(255);
   noStroke();
   textSize(min(width, height) * 0.04);
-  textFont('Roboto Mono');
-  text('100-Day Countdown', width / 2, height * 0.15);
+  textStyle(BOLD);
+  textFont('Helvetica');
+  const targetYear = targetDate.getFullYear();
+  text(`Countdown to April 11, ${targetYear}`, width / 2, height * 0.15);
   
   // Check if countdown is complete
   const isComplete = days === 0 && hours === 0 && minutes === 0 && seconds === 0 && 
@@ -213,7 +157,8 @@ function draw() {
     // Show completion message
     fill(255);
     textSize(min(width, height) * 0.05);
-    textFont('Roboto Mono');
+    textStyle(BOLD);
+    textFont('Helvetica');
     text('Countdown complete', width / 2, height * 0.85);
   }
   
@@ -222,7 +167,7 @@ function draw() {
   const centerY = height / 2;
   const digitSize = min(width, height) * 0.12;
   const labelSize = min(width, height) * 0.025;
-  const spacing = min(width, height) * 0.08;
+  const spacing = min(width, height) * 0.15; // Increased spacing between numbers
   
   // Draw countdown digits
   drawTimeUnit(centerX - spacing * 1.5, centerY, days, 'Days', digitSize, labelSize, animatingElements.days);
@@ -235,30 +180,30 @@ function draw() {
 }
 
 function drawTimeUnit(x, y, value, label, digitSize, labelSize, isAnimating) {
-  // Apply font to digits
-  textFont(currentFont);
-  
   // Animation effect (scale and opacity)
-  let scale = 1.0;
+  let scaleFactor = 1.0;
   let alpha = 255;
   if (isAnimating) {
-    scale = 1.1;
+    scaleFactor = 1.1;
     alpha = 180;
   }
   
   push();
   translate(x, y);
-  scale(scale);
+  scale(scaleFactor);
   
-  // Draw digit value
+  // Draw digit value with Helvetica Bold
   fill(255, alpha);
   textSize(digitSize);
+  textStyle(BOLD);
+  textFont('Helvetica');
   text(pad(value), 0, -labelSize * 2);
   
-  // Draw label (always use default font, not rotated font)
+  // Draw label with Helvetica Bold
   fill(255, 230);
   textSize(labelSize);
-  textFont('Roboto Mono');
+  textStyle(BOLD);
+  textFont('Helvetica');
   text(label, 0, digitSize * 0.4);
   
   pop();
@@ -267,7 +212,8 @@ function drawTimeUnit(x, y, value, label, digitSize, labelSize, isAnimating) {
 function drawSeparator(x, y, digitSize) {
   fill(255, 180);
   textSize(digitSize * 0.6);
-  textFont('Roboto Mono');
+  textStyle(BOLD);
+  textFont('Helvetica');
   text(':', x, y);
 }
 

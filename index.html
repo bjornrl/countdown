@@ -1,23 +1,174 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
+<head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>100 Days From Jan 1, 2026</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --text-color: #ffffff;
+        }
 
-    <title>Sketch</title>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    <link rel="stylesheet" type="text/css" href="style.css">
-    
-    <!-- Load Google Fonts for countdown timer -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@700&family=Space+Mono:wght@700&family=JetBrains+Mono:wght@700&family=Fira+Code:wght@700&family=Source+Code+Pro:wght@700&family=IBM+Plex+Mono:wght@700&family=PT+Mono&family=Share+Tech+Mono&family=VT323&family=Orbitron:wght@900&family=Rajdhani:wght@700&family=Quantico:wght@700&display=swap" rel="stylesheet">
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            text-align: center;
+        }
 
-    <script src="libraries/p5.min.js"></script>
-    <script src="libraries/p5.sound.min.js"></script>
-  </head>
+        #timer-container {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+            padding: 40px;
+        }
 
-  <body>
-    <script src="sketch.js"></script>
-  </body>
+        .countdown-wrapper {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+
+        .unit-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 240px;
+        }
+
+        .digits {
+            font-size: 10rem;
+            font-weight: bold;
+            line-height: 1;
+            letter-spacing: 4px;
+            display: flex;
+        }
+
+        .label {
+            font-size: 1.6rem;
+            text-transform: uppercase;
+            letter-spacing: 8px;
+            margin-top: 20px;
+            opacity: 0.7;
+        }
+
+        /* Each character gets its own span for font cycling */
+        .char {
+            display: inline-block;
+            transition: font-family 0.1s ease;
+            width: 0.65em; /* Prevent layout shift as fonts change */
+            text-align: center;
+        }
+
+        @media (max-width: 600px) {
+            .digits {
+                font-size: 6rem;
+            }
+            .unit-box {
+                min-width: 160px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="timer-container">
+        <div class="countdown-wrapper" id="countdown">
+            <!-- Days -->
+            <div class="unit-box">
+                <div class="digits" id="days"></div>
+                <div class="label">Days</div>
+            </div>
+            <!-- Hours -->
+            <div class="unit-box">
+                <div class="digits" id="hours"></div>
+                <div class="label">Hours</div>
+            </div>
+            <!-- Minutes -->
+            <div class="unit-box">
+                <div class="digits" id="minutes"></div>
+                <div class="label">Minutes</div>
+            </div>
+            <!-- Seconds -->
+            <div class="unit-box">
+                <div class="digits" id="seconds"></div>
+                <div class="label">Seconds</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Target Date: January 1, 2026 + 100 Days
+        const targetDate = new Date('2026-01-01T00:00:00').getTime() + (100 * 24 * 60 * 60 * 1000);
+
+        // List of distinct available font types/families
+        const fonts = [
+            'Arial', 'Verdana', 'Helvetica', 'Tahoma', 'Trebuchet MS', 
+            'Times New Roman', 'Georgia', 'Garamond', 'Palatino', 'Bookman',
+            'Courier New', 'Monaco', 'Lucida Console', 'Consolas',
+            'Comic Sans MS', 'Impact', 'Arial Black', 'Copperplate', 'Papyrus',
+            'fantasy', 'cursive', 'serif', 'sans-serif', 'monospace'
+        ];
+
+        /**
+         * Takes a string and returns HTML with each character wrapped in a span
+         */
+        function wrapCharacters(str) {
+            return str.split('').map(char => `<span class="char">${char}</span>`).join('');
+        }
+
+        /**
+         * Randomly assigns a font from the list to every .char element on the page
+         */
+        function alternateFonts() {
+            const charElements = document.querySelectorAll('.char');
+            charElements.forEach(el => {
+                const randomFont = fonts[Math.floor(Math.random() * fonts.length)];
+                el.style.fontFamily = randomFont;
+            });
+        }
+
+        function updateCountdown() {
+            const now = new Date().getTime();
+            const distance = targetDate - now;
+
+            if (distance < 0) {
+                document.getElementById('timer-container').innerHTML = "<h1>COUNTDOWN FINISHED</h1>";
+                return;
+            }
+
+            const d = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((distance % (1000 * 60)) / 1000);
+
+            // Update DOM
+            document.getElementById('days').innerHTML = wrapCharacters(d.toString().padStart(2, '0'));
+            document.getElementById('hours').innerHTML = wrapCharacters(h.toString().padStart(2, '0'));
+            document.getElementById('minutes').innerHTML = wrapCharacters(m.toString().padStart(2, '0'));
+            document.getElementById('seconds').innerHTML = wrapCharacters(s.toString().padStart(2, '0'));
+
+            // Apply fonts immediately after DOM update
+            alternateFonts();
+        }
+
+        // Initialize countdown and fonts
+        updateCountdown();
+
+        // Update both timer values and fonts every second
+        setInterval(updateCountdown, 1000);
+    </script>
+</body>
 </html>
